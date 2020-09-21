@@ -1,0 +1,2 @@
+@ECHO 
+python "application.py"
