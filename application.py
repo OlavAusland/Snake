@@ -1,5 +1,4 @@
 import random
-from modules import cmd
 import time
 import sys
 
@@ -7,83 +6,67 @@ class Grid:
     def __init__(self, columns, rows):
         self.columns = columns
         self.rows = rows
-        self.board = {}
+        self.layout = []
 
-        cmd.Window.clear()
-        for x in range(self.rows):
-            for y in range(self.columns):
-                cmd.Color.reset
-                cmd.Color.cyan
-
-                self.board[x, y] = '.'
-
-    def draw(self):
-        cmd.Window.clear()
-        graphics = str()
-        for index, (key, value) in enumerate(self.board.items()):
-            if(index % self.columns == 0):
-                graphics += '\n'
-
-            print(value, end=" ")
-            graphics += f'{value} '
-        print(graphics, file=sys.stdout.flush())
-
-
-class Apple:
-    def __init__(self, grid):
-        self.grid = grid
-        self.symbol = cmd.Color.red + '●' + cmd.Color.reset
-        self.position = (
-            random.randint(0, grid.rows),
-            random.randint(0, grid.columns)
-        )
-
-    def instantiate(self):
-        self.grid.board[
-            random.randint(0, self.grid.columns),
-            random.randint(0, self.grid.rows)
-        ] = self.symbol
+        #Initialize grid
+        for x in range(self.columns):
+            for y in range(self.rows):
+                self.layout.append([x, y])
 
 
 class Snake:
     def __init__(self, grid):
-        self.points = 0
-        self.grid = grid
         self.symbol = '■'
-        self.directions = self.directions = {'left':[0, -1], 'right':[0, 1], 'up':[-1, 0], 'down':[1, 0]}
+        self.body = [[4, 4], [4, 5], [4, 6]]
+        self.grid = grid
+        self.directions = ['left', 'right', 'up', 'down']
 
-        self.body = [
-            (10, 10)
-        ]
+    def move(self, grid, direction):
 
-    def clear(self):
-        cmd.Window.clear()
-        for key, value in self.grid.board.items():
-            for point in self.body:
-                if(point == key):
-                    self.grid.board[key] = '.'
+        if(direction == 'left'):
+            for index, point in enumerate(reversed(self.body)):
+                try:
+                    self.body[index] = self.body[index - 1]
+                except Exception as error:
+                    print(error)
+                    self.body[index] = [point[0] - 1, point[1]]
+
+
+
+class Apple:
+    def __init__(self):
+        pass
+
+class GameManager:
+    def __init__(self, grid, snake, apple):
+        self.grid = grid
+        self.snake = snake
+        self.apple = apple
+        self.score = 0
 
     def update(self):
-        self.clear()
-        for key, value in self.grid.board.items():
-            for point in self.body:
-                if(point == key):
-                    self.grid.board[key] = self.symbol
+        layout = str()
 
-    def move(self, direction):
-        for index, point in enumerate(self.body):
-            point = (point[0] + direction[0], point[1] + direction[1])
+        self.snake.move(self.grid, 'left')
+        for index, point in enumerate(self.grid.layout):
+            if(index % self.grid.columns == 0 and index != 0):
+                layout += '\n'
+            if(point == self.snake.body[0] or point == self.snake.body[1]):
+                layout += 'X '
+            else:
+                layout += '. '
+        layout += '\n'
+        print(layout, end=None, file=sys.stdout.flush())
 
-        self.update()
 
+def main():
+    grid = Grid(10, 10)
+    snake = Snake(grid)
+    apple = Apple()
+    gameManager = GameManager(grid, snake, apple)
+    for _ in range(4):
+        gameManager.update()
+        time.sleep(1)
 
-
-grid = Grid(20, 20)
-snake = Snake(grid)
-apple = Apple(grid)
-
-apple.instantiate()
-for i in range(10):
-    snake.move(snake.directions[random.choice(['left', 'right', 'up', 'down'])])
-    grid.draw()
-    time.sleep(1)
+if __name__ == '__main__':
+    main()
