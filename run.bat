@@ -1,2 +1,2 @@
 @ECHO 
-python "application.py"
+python "snake.py"

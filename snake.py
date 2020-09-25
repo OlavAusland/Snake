@@ -4,6 +4,9 @@ import sys
 import keyboard
 from modules import cmd
 from threading import Thread
+import json
+
+DATA = 'data.json'
 
 class Grid:
     def __init__(self, columns, rows):
@@ -19,7 +22,7 @@ class Grid:
 class Snake:
     def __init__(self, grid):
         self.symbol = f'{cmd.Color.green}■{cmd.Color.reset}'
-        self.body = [[4, 4], [4, 5], [4, 6], [4, 7], [4, 8]]
+        self.body = [[4, 4]]
         self.ghost_pos = self.body[-1]
         self.grid = grid
         self.directions = ['left', 'right', 'up', 'down']
@@ -54,16 +57,17 @@ class Apple:
     def instantiate(self, grid, snake):
         while True:
             self.position = [
-                random.randint(1, grid.columns),
-                random.randint(1, grid.rows)
+                random.randint(1, grid.columns -1),
+                random.randint(1, grid.rows -1)
             ]
 
             for point in snake.body:
                 if(point == self.position):
-                    self.instantiate()
+                    self.instantiate(grid, snake)
             break
 
 class GameManager:
+    global lost
     def __init__(self, grid, snake, apple):
         self.grid = grid
         self.snake = snake
@@ -72,13 +76,23 @@ class GameManager:
 
         self.apple.instantiate(self.grid, self.snake)
 
+        #WINDOW NAME
+        cmd.Window.title('Snake Game  I  Olav Ausland')
+        #WINDOW SIZE
+        cmd.Window.resize(50, 27)
+
     def update(self, direction):
         cmd.Window.clear()
         layout = str()
         self.snake.move(self.grid, direction)
+
         if(self.isDead()):
-            sys.exit()
-        #CHANGE NAME
+            if(self.score > self.request_high_score()):
+                self.write_high_score(self.score)
+            print(f'You Lost | Score: {self.score} | High Score: {self.request_high_score()}')
+            lost = True
+        else:
+            print(f'Score: {self.score}')
         for index, point in enumerate(self.grid.layout):
             if(index % self.grid.columns == 0 and index != 0):
                 layout += '\n'
@@ -89,7 +103,6 @@ class GameManager:
                 layout += f'{self.apple.symbol} '
                 continue
             layout += '. '
-        layout += '\n'
         self.snake_score()
         print(layout, end=None, file=sys.stdout.flush())
 
@@ -106,7 +119,18 @@ class GameManager:
                     return True
         return False
 
+    def request_high_score(self):
+        with open(DATA, 'r+') as data:
+            data = json.load(data)
+            return data['High Score']
+
+    def write_high_score(self, score):
+        with open(DATA, 'w+') as file:
+            data = {"High Score":score}
+            json.dump(data, file)
+
 direction = 'left'
+lost = False
 
 def main():
     Thread(target=input).start()
@@ -114,7 +138,7 @@ def main():
 
 def input():
     global direction
-    while True:
+    while not lost:
         if(keyboard.is_pressed('w')):
             direction = 'up'
         elif(keyboard.is_pressed('a')):
@@ -131,7 +155,7 @@ def gameLoop():
     snake = Snake(grid)
     apple = Apple()
     gameManager = GameManager(grid, snake, apple)
-    while True:
+    while not lost:
         gameManager.update(direction)
         if(gameManager.isDead()):
             break
