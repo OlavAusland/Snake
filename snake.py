@@ -61,8 +61,7 @@ class Apple:
                 random.randint(1, grid.rows -1)
             ]
 
-            for point in snake.body:
-                if(point == self.position):
+            if(self.position in snake.body):
                     self.instantiate(grid, snake)
             break
 
